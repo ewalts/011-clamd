@@ -1,0 +1,28 @@
+- name: Update apt cache
+  become: true
+  ansible.builtin.apt:
+    update_cache: true
+
+- name: Install packages
+  become: true
+  ansible.builtin.apt:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - clamav-base
+    - clamav
+    - clamdscan
+    - clamav-testfiles
+
+- name: Copy clamd config
+  become: true
+  copy:
+    src: files/clamd_client.conf
+    dest: /etc/clamav/clamd.conf
+    mode: 0644
+
+- name: Remove excess packages no longer needed
+  become: true
+  ansible.builtin.apt:
+    autoremove: yes
+

@@ -1,0 +1,20 @@
+- name: Update apt cache
+  become: true
+  ansible.builtin.apt:
+    update_cache: true
+
+- name: Install packages
+  become: true
+  ansible.builtin.apt:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - clamav-base
+    - clamsmtp
+
+
+- name: Remove excess packages no longer needed
+  become: true
+  ansible.builtin.apt:
+    autoremove: yes
+

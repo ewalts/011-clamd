@@ -1,0 +1,29 @@
+- name: Update hostname
+  become: true
+  shell: |
+    sudo /bin/hostname "{{ instances[0].name }}"
+    sudo rm -f /etc/hostname
+    echo "{{ instances[0].name }}" | sudo tee /etc/hostname
+    sudo chown root:root /etc/hostname
+    sudo chmod 0644 /etc/hostname
+
+
+#this_ip=$(ip add show eth0|grep inet |awk '{print $2}'|sed 's/\/28/ /g' |awk '{print $1}')
+#this_ip=$(ip add show eth0|grep inet |awk '{print $2}'|sed 's/\/28 /, /g' |awk 'BEGIN {FS=","}; {print $1}')
+- name: Fetch private ip address
+  shell: |
+    this_ip=$(ip add show eth0|grep 'inet '|awk '{print $2}'|sed 's/\/28/,/g')
+    echo $this_ip |awk 'BEGIN {FS=","}; {print $1}'
+  register: thisIP
+
+- debug:
+    msg: "{{ thisIP }}"
+
+- name: update hosts file
+  become: true
+  lineinfile: 
+    state: present
+    path: '/etc/hosts'
+    create: true
+    regexp: "{{ thisIP.stdout }}"
+    line: "{{ thisIP.stdout }}    {{ instances[0].name }} {{ instances[0].name }}.{{ dns_zone }}"
