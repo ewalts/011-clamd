@@ -1,0 +1,28 @@
+- name: Update client with Server internal
+  gather_facts: false
+  vars_files:
+    - vars/sec_vars.yml
+    - vars/deployment_vars.yml
+    - vars/deployment_output_vars.yml
+  hosts: localhost
+  tasks:
+    - name: Get local ip address
+      shell: |
+        aws ec2 describe-instances --query  'Reservations[*].Instances[?InstanceId==`{{ instance_id }}`].NetworkInterfaces[*].PrivateIpAddress'
+      register: result
+    - debug:
+        msg: "{{ result.stdout }}"
+
+    - name: Cleanup the output
+      shell: |
+        echo "{{ result.stdout }}" |sed 's/\n//g' |sed 's/ //g' |sed 's/-//g' |sed 's/\[//g' |sed 's/\]//g' |sed "s/\\n//g"
+      register: ip_add
+    - debug:
+        msg: "{{ ip_add.stdout }}"
+
+    - name: Write config
+      lineinfile:
+        path: "{{ dep_home }}/playbook/files/clamd_client.conf"
+        regexp: 'TCPAddr'
+        line: "TCPAddr {{ ip_add.stdout | trim }}"
+        insertafter: "TCPSocket "

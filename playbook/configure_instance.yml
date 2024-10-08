@@ -1,0 +1,82 @@
+#######################################################>
+###> This Ubuntu playbook performs initial settings: 
+###> Updating packages to latest.
+###> Set the prefered timzone 
+###> Configure network time protocol
+###> Insure root cannot direclty login over SSH
+#######################################################>
+
+- name: Initial server setup tasks
+  hosts: ec2hosts
+  remote_user: ubuntu
+  gather_facts: false
+  vars_files:
+    - vars/sec_vars.yml
+    - vars/deployment_vars.yml
+    - vars/instance_vars.yml
+  tasks:
+    - name: Wait for SSH
+      ansible.builtin.wait_for:
+        port: 22
+        host: '{{ (ansible_ssh_host|default(ansible_host))|default(inventory_hostname) }}'
+        search_regex: OpenSSH
+        delay: 10
+      connection: local
+
+    - name: Create local accounts/groups
+      import_tasks:
+        file: tasks/local_accounts.yml
+
+    - name: Host identity
+      import_tasks:
+        file: tasks/set_hostname_local.yml
+
+    - name: Ubuntu Packages
+      import_tasks:
+        file: tasks/ubuntu_server_basics.yml
+
+    - name: Install/Configure iptables
+      import_tasks:
+        file: tasks/iptables.yml
+
+    - name: Configure rsyslog remote logging
+      import_tasks:
+        file: tasks/remote_syslog.yml
+
+    - name: Define prefered timezone
+      become: true
+      community.general.timezone:
+        name: "{{ my_timezone }}"
+   
+    - name: Directory structure
+      import_tasks:
+        file: tasks/create_remote_file_structure.yml
+
+    - name: SSH banner
+      import_tasks:
+        file: tasks/ssh_banner.yml
+
+    - name: Disable remote login for root
+      become: true
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        state: present
+        regexp: '^PermitRootLogin yes'
+        line: 'PermitRootLogin no'
+
+    - name: Configure SSH AllowGroups
+      become: true
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        state: present
+        line: 'AllowGroups "{{ ssh_group }}"'
+        insertafter: '#VersionAddendum none'
+
+    - name: Remove excess packages no longer needed
+      become: true
+      ansible.builtin.apt:
+        autoremove: yes
+
+    - name: Reboot all hosts
+      become: true
+      ansible.builtin.reboot:

@@ -1,0 +1,65 @@
+###> RWI Technology Kubernetes Deployment
+###> Deployment details
+copy_local_key: "{{ lookup('file', lookup('env','HOME') + '/.ssh/id_rsa.pub') }}"
+
+host_purpose: clamav-daemon-server
+
+
+###> Tags
+web_tags_name: "{{ product_id }}-site"
+
+product_tag: "{{ product_id }}"
+product_title: "{{ product_id }} ClamAV Daemon Server"
+
+deploy_path: "/usr/share/{{ product_id }}"
+ami_name: "{{ product_id }}-ubu-22"
+tags_name: "{{ product_id }}-w2"
+
+s3_repo: "s3://{{ product_id }}"
+s3_bucket: "{{ product_id }}"
+s3_policy: "{{ script_path }}/{{ product_id }}-s3.json"
+s3_policy_source: ~/.ansible/iam/S3_simple_ec2_policy.json
+
+ec2_base_ami: "{{ ubu_22_10g }}"
+
+ecr_reg_name: "{{ product_id }}"
+iam_role: "{{ product_id }}-EC2-Role"
+role_desc: "CLAMD EC2 Role"
+#instance_profile: "{{ product_id }}-EC2Profile-1"
+policy_name: "{{ product_id }}-EC2Policy"
+key_name: "{{ product_id }}"
+
+net_role_tag: "{{ net_purpose }} NCOMs"
+
+ncom_net_sg: "{{ product_id }}-ncoms"
+sg: "{{ product_id }}-ncoms"
+sg_tag_name: "{{ product_id }}-ncoms"
+new_env: "{{ product_id }}"
+script_path: "{{ dep_home }}/playbook/scripts"
+key_file: "{{ key_dir }}/{{ product_id }}.pem"
+my_ssh_key_path: "{{ key_dir }}/{{ product_id }}.pem"
+
+#################################
+deployment_log: "{{ dep_home }}/playbook/vars/deployment_output_vars.yml"
+
+subnet_tag_name: "{{ product_id }}-subnet"              
+ncom_tag_name: "{{ product_id }}-net-comm"          
+tags_service: "{{ product_id }}"         
+
+#my_elb: "{{ product_id }}-lb01"
+#my_asgs:
+#  - { name: "{{ product_id }}-node-asg", lt: "{{ product_id }}-node-launch-template", lt_param: 'node-launch-template' }
+#  - { name: "{{ product_id }}-mgr-asg", lt: "{{ product_id }}-mgr-launch-template", lt_param: 'mgr-launch-template' }
+
+deployment_log: "{{ dep_home }}/playbook/vars/deployment_output_vars.yml"
+
+###>  Central logging
+#rsyslog_file: files/rsyslog.conf  ###> Single remote host for central logging via syslog facility.
+log_dest: "{{ central_logging }}"  ###> Syslog/logstash host:port When already defined, deployment is not going to automatically asign this value
+
+
+###> Local logstash pipeline
+logstash_config: "{{ elk_repo }}/files/logstash.conf"
+logstash_pipline: "{{ elk_repo }}/files/logstash_pipe.json"
+elsatic_dest: "{{ elk_data_hosts }}"
+
